@@ -1,10 +1,18 @@
-package com.company;
+package uk.ac.ucl.zcabrdc;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.image.BufferStrategy;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -17,6 +25,17 @@ public class Main {
     public static ArrayList<Node> verticesNodeList;
     public static ArrayList<Line2D.Double> segmentList;
     public static ArrayList<Robot> targetList;
+
+    public static int drawNumber = 14;
+    public static ArrayList<Robot> drawRobots;
+    public static ArrayList<Obstacle> drawWalls;
+    public static ArrayList<Robot> drawLines;
+
+    public static String teamName = "qilin";
+    public static String password = "aspcqkrt7jjcde67482oj3r2pa";
+    public static String fileName = "output.txt";
+    public static int questionNumber = 1;
+    public static PrintWriter outputStream;
 
     public static boolean equal(double x, double y) {
         return (Math.abs(x - y) < 0.000000001);
@@ -41,9 +60,9 @@ public class Main {
         for (int i = 0; i < x.length; i++) {
             acc += (x[(i+1) % x.length] - x[i]) * (y[(i+1) % x.length] + y[i]);
         }
-        System.out.println(acc);
+        //System.out.println(acc);
         if (acc > 0) {
-            System.out.println("Clockwise");
+            //System.out.println("Clockwise");
             for (int i = 0; i < x.length / 2; i++) {
                 double t = 0;
                 t = o.x[i];
@@ -220,11 +239,21 @@ public class Main {
         }
 
     }
+    static int drawCount = 1;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        outputStream = new PrintWriter(fileName);
+        outputStream.println(teamName);
+        outputStream.println(password);
+
         Stream<String> stream = Files.lines(Paths.get("robots.mat"));
         String regexFloat = "(-?[.0-9]*)";
+
         stream.forEach(line -> {
+            System.out.println("drawCount: " + drawCount);
+            System.out.println("drawNumber: " + drawNumber);
+            System.out.println("----------------------");
+            if (drawCount++ != drawNumber) {return;}
             robotArrayList = new ArrayList<Robot>();
             obstacleArrayList = new ArrayList<Obstacle>();
             int gitgud = 0;
@@ -357,18 +386,9 @@ public class Main {
                     if (v.name != vv.name && !v.adjacentList.contains(vv)) {
                         Line2D.Double newLine = new Line2D.Double(v.x, v.y, vv.x, vv.y);
                         boolean flag = true;
-//                        System.out.println(v.name + " " + vv.name);
-//                        isInside(v, newLine);
-//                        if (v.name == 30 && vv.name == 33)
-//                                return;
                         if (isInside(v, newLine)) {
-//                            System.out.println("in");
-//                            if (v.name == 30 && vv.name == 33)
-//                                return;
                             continue;
                         }
-//                        System.out.println("out");
-//                        System.out.println(v.name + " " + vv.name);
                         for (Line2D.Double s : segmentList) {
                             if (s.intersectsLine(newLine) && !isShareEndPoint(newLine, s)) {
                                 flag = false;
@@ -376,7 +396,6 @@ public class Main {
                             }
                         }
                         if (flag) {
-//                            System.out.println("match");
                             v.adjacentList.add(vv);
                             vv.adjacentList.add(v);
                         }
@@ -396,6 +415,13 @@ public class Main {
 //             Output
             output();
 
+            drawCount--;
+            if (drawCount++ == drawNumber) {
+                drawRobots = new ArrayList<>(robotArrayList);
+                drawWalls = new ArrayList<>(obstacleArrayList);
+                drawLines = new ArrayList<>(targetList);
+            }
+
             robotArrayList.clear();
             robotNodeList.clear();
             obstacleArrayList.clear();
@@ -403,208 +429,129 @@ public class Main {
             segmentList.clear();
             targetList.clear();
         });
-    }
-//    public static void input() {
-//        Stream<String> stream = null;
-//        try {
-//            stream = Files.lines(Paths.get("robots.mat"));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        String regexFloat = "(-?[.0-9]*)";
-//        stream.forEach(line -> {
-//            robotArrayList = new ArrayList<Robot>();
-//            obstacleArrayList = new ArrayList<Obstacle>();
-//            int gitgud = 0;
-//
-//            String currentLine = line
-//                    .replaceAll("\\s", "");
-//
-//            String[] divideString = currentLine.split("#");
-//
-//            Matcher m = Pattern
-//                    .compile("\\(" + regexFloat + "," + regexFloat + "\\)")
-//                    .matcher(divideString[0]);
-//
-//            while (m.find()) {
-//                double x = Double.parseDouble(m.group(1));
-//                double y = Double.parseDouble(m.group(2));
-//                robotArrayList.add(new Robot(x, y, gitgud));
-//                gitgud++;
-//            }
-//
-//            if (divideString.length > 1) {
-//                String[] wallString = divideString[1].split(";");
-//
-//                for (int j = 0; j < wallString.length; j++) {
-//                    ArrayList<Double> x = new ArrayList<>();
-//                    ArrayList<Double> y = new ArrayList<>();
-//
-//                    m = Pattern
-//                            .compile("\\(" + regexFloat + "," + regexFloat + "\\)")
-//                            .matcher(wallString[j]);
-//
-//                    while (m.find()) {
-//                        double a = Double.parseDouble(m.group(1));
-//                        double b = Double.parseDouble(m.group(2));
-//                        x.add(a);
-//                        y.add(b);
-//                    }
-//                    int arrLength = x.size();
-//                    double[] xs = new double[arrLength];
-//                    double[] ys = new double[arrLength];
-//                    for (int i = 0; i < arrLength; i++) {
-//                        xs[i] = x.get(i);
-//                        ys[i] = y.get(i);
-//                    }
-//
-//                    obstacleArrayList.add(new Obstacle(xs, ys, arrLength));
-//                }
-//            }
-//
-//    }
 
-//    public static void main(String[] args) {
-//        // write your code here
-//        // Read Input
-//        // For example
-//        // Robots : (-1,-1),(4,4)
-//        // Obstacles : (1,6),(1,1),(5,1),(5,5),(3,5),(3,3),(4,3),(4,2),(2,2),(2,6),(6,6),(6,0),(0,0),(0,6)
-////        robotArrayList = new ArrayList<Robot>();
-////        robotArrayList.add(new Robot(0, 1, 0));
-////        robotArrayList.add(new Robot(2, 0, 1));
-////        robotArrayList.add(new Robot(3, 5, 2));
-////        robotArrayList.add(new Robot(6, 2, 3));
-////        robotArrayList.add(new Robot(9, 0, 4));
-////
-////        obstacleArrayList = new ArrayList<Obstacle>();
-////        double x[] = {1, 1, 3, 3};
-////        double y[] = {2, 4, 4, 2};
-////        obstacleArrayList.add(new Obstacle(x, y, x.length));
-////        double xx[] = {8, 4, 4, 5};
-////        double yy[] = {1, 1, 4, 2};
-////        obstacleArrayList.add(new Obstacle(xx, yy, xx.length));
-//        // Set the segment list and Node list
-//
-//        input();
-//        segmentList = new ArrayList<Line2D.Double>();
-//
-//        robotNodeList = new ArrayList<Node>();
-//
-//        verticesNodeList = new ArrayList<Node>();
-//        int numberNode = 0;
-//
-//        for (Robot r : robotArrayList) {
-//            robotNodeList.add(new Node(numberNode, r.x, r.y));
-//            numberNode++;
-//        }
-//
-//        for (Obstacle o : obstacleArrayList) {
-//            double[] xList = o.x;
-//            double[] yList = o.y;
-//            for (int i = 0; i < xList.length; i++) {
-//                Node newNode = new Node(numberNode, xList[i], yList[i]);
-//                verticesNodeList.add(newNode);
-//                o.verticesList.add(newNode);
-//                numberNode++;
-//                segmentList.add(new Line2D.Double(xList[i], yList[i], xList[(i + 1) % xList.length], yList[(i + 1) % xList.length]));
-//            }
-//        }
-//
-//
-//        // Construct the edges
-//        // Consider 3 types of edges
-//        // Node of robots - Node of robots
-//        for (Node r : robotNodeList) {
-//            for (Node rr : robotNodeList) {
-//                if (r.name != rr.name && !r.adjacentList.contains(rr)) {
-//                    Line2D.Double newLine = new Line2D.Double(r.x, r.y, rr.x, rr.y);
-//                    boolean flag = true;
-//                    for (Line2D.Double s : segmentList) {
-//                        if (s.intersectsLine(newLine) && !isShareEndPoint(newLine, s)) {
-//                            flag = false;
-//                            break;
-//                        }
-//                    }
-//                    if (flag) {
-//                        r.adjacentList.add(rr);
-//                        rr.adjacentList.add(r);
-//                    }
-//                }
-//            }
-//        }
-//        // Node of robots - Node of vertices
-//        for (Node r : robotNodeList) {
-//            for (Node rr : verticesNodeList) {
-//                if (r.name != rr.name && !r.adjacentList.contains(rr)) {
-//                    Line2D.Double newLine = new Line2D.Double(r.x, r.y, rr.x, rr.y);
-//                    boolean flag = true;
-//                    for (Line2D.Double s : segmentList) {
-//                        if (s.intersectsLine(newLine) && !isShareEndPoint(newLine, s)) {
-//                            flag = false;
-//                            break;
-//                        }
-//                    }
-//                    if (flag) {
-//                        r.adjacentList.add(rr);
-//                        rr.adjacentList.add(r);
-//                    }
-//                }
-//            }
-//        }
-//        // Node of vertices - Node of vertices
-//        for (Obstacle o : obstacleArrayList) {
-//            for (int i = 0; i < o.verticesList.size(); i++) {
-//                o.verticesList.get(i).adjacentList.add(o.verticesList.get((i + o.verticesList.size() - 1) % o.verticesList.size()));
-//                o.verticesList.get(i).left = o.verticesList.get((i + o.verticesList.size() - 1) % o.verticesList.size());
-//                o.verticesList.get(i).adjacentList.add(o.verticesList.get((i + 1) % o.verticesList.size()));
-//                o.verticesList.get(i).right = o.verticesList.get((i + 1) % o.verticesList.size());
-//            }
-//        }
-//
-//        for (Node v : verticesNodeList) {
-//            for (Node vv : verticesNodeList) {
-//                if (v.name != vv.name && !v.adjacentList.contains(vv)) {
-//                    Line2D.Double newLine = new Line2D.Double(v.x, v.y, vv.x, vv.y);
-//                    boolean flag = true;
-//                    if (isInside(v, newLine)) {
-//                        continue;
-//                    }
-//                    for (Line2D.Double s : segmentList) {
-//                        if (s.intersectsLine(newLine) && !isShareEndPoint(newLine, s)) {
-//                            flag = false;
-//                            break;
-//                        }
-//                    }
-//                    if (flag) {
-//                        v.adjacentList.add(vv);
-//                        vv.adjacentList.add(v);
-//                    }
-//                }
-//            }
-//        }
-//
-//        // Find shortest path between the robots
-//
-//        for (Node r : robotNodeList) {
-//            dijkstra(r);
-//        }
-//
-//        // Starting Greedy Delayed Algorithm
-//        greedyDelayed();
-//
-//        // Output
-//        output();
-//    }
+        outputStream.close();
+        draw();
+    }
+
 
     public static void output() {
+        boolean skip = false;
+
+        ArrayList<String> results = new ArrayList<>();
+        System.out.print(questionNumber + ": ");
+        outputStream.print(questionNumber + ": ");
+        questionNumber++;
         for (Robot r : targetList) {
             for (Path p : r.route) {
                 for (Node n : p.path) {
-                    System.out.print("(" + n.x + ", " + n.y + "), ");
+                    skip = true;
+                    results.add("(" + n.x + ", " + n.y + "), ");
                 }
             }
-            if (r.route.size() != 0) System.out.print("; ");
+            if (skip) {
+                String last = results.remove(results.size() - 1);
+                results.add(last.substring(0, last.length() - 2).concat("; "));
+            }
+            skip = false;
+        }
+        String last = results.remove(results.size() - 1);
+        results.add(last.substring(0, last.length() - 2).concat("\n"));
+
+        ArrayList<String> removeList = new ArrayList<>();
+        for (int i = 0; i < results.size() - 1; i++) {
+            String s = results.get(i);
+            if (s.equals(results.get(i + 1))) {
+                removeList.add(s);
+            }
+        }
+        removeList.forEach(results::remove);
+        results.forEach(System.out::print);
+        results.forEach(outputStream::print);
+    }
+
+    public static void draw() throws InterruptedException{
+        JFrame frame = new JFrame("Move and Tag Problem");
+        frame.setSize(800, 800);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        frame.createBufferStrategy(2);
+        BufferStrategy strategy = frame.getBufferStrategy();
+
+        double x_max, y_max, x_min, y_min;
+        ArrayList<Double> xs = new ArrayList<>();
+        ArrayList<Double> ys = new ArrayList<>();
+        for (Robot r : drawRobots) {
+            xs.add(r.x);
+            ys.add(r.y);
+        }
+        for (Obstacle o : drawWalls) {
+            for (int i =0; i<o.x.length; i++) {
+                xs.add(o.x[i]);
+            }
+            for (int i =0; i<o.y.length; i++) {
+                ys.add(o.y[i]);
+            }
+        }
+        x_max = Collections.max(xs);
+        y_max = Collections.max(ys);
+        x_min = Collections.min(xs);
+        y_min = Collections.min(ys);
+
+        while (true) {
+            Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
+            AffineTransform old = g.getTransform();
+            Dimension size = frame.getSize();
+
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, (int) size.getWidth(), (int) size.getHeight());
+            g.scale(size.getWidth() / (x_max - x_min + 10), size.getHeight() / (y_max - y_min + 10));
+            g.translate(-x_min + 5, -y_min + 5);
+
+            g.setColor(Color.RED);
+            //draw obstacles
+            for (Obstacle o : drawWalls) {
+                Path2D.Double path = new Path2D.Double();
+                boolean first = true;
+                for (Node v : o.verticesList) {
+                    if (first) {
+                        path.moveTo(v.x, v.y);
+                        first = false;
+                    } else
+                        path.lineTo(v.x, v.y);
+                }
+                g.fill(path);
+            }
+
+            //starting positions (inclusive of end positions)
+            g.setColor(Color.CYAN);
+            double radius = 0.1;
+            for (Robot robot : drawRobots) {
+                Ellipse2D.Double r = new Ellipse2D.Double(robot.x - radius, robot.y - radius, radius * 2, radius * 2);
+                g.fill(r);
+            }
+
+            g.setColor(Color.GREEN);
+            for (Robot r : drawLines) {
+                //paths for all robots
+                for (Path p : r.route) {
+                    //path for one robot
+                    Line2D line = new Line2D.Double();
+                    for (int i = 0; i < p.path.size() - 1; i++) {
+                        //nodes in paths
+                        line.setLine(p.path.get(i).x, p.path.get(i).y, p.path.get(i + 1).x, p.path.get(i + 1).y);
+                        g.setStroke(new BasicStroke(0.05f));
+                        g.draw(line);
+                    }
+                }
+            }
+
+            g.setTransform(old);
+            g.dispose();
+            strategy.show();
+
+            Thread.sleep(100);
         }
     }
 }
