@@ -14,6 +14,7 @@ public class Node {
     public Node right;
     public ArrayList<Path> pathList;
     public boolean isVisited;
+    public int from;
     Node(int name, double x, double y) {
         this.name = name;
         this.x = x;
